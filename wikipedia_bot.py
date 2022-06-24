@@ -59,6 +59,25 @@ def start(m, res=False):
 @bot.message_handler(content_types=["text"])
 def handle_text(message):
     bot.send_message(message.chat.id, get_wiki(message.text))
+# def mess(message):
+#     final_message = ''
+#     word = message.text.strip().lower()
+#     try:
+#         final_message = wikipedia.summary(word)
+#     # except wikipedia.exceptions.PageError:
+#     #     final_message = ''
+#     except wikipedia.exceptions.DisambiguationError:
+#         final_message = '\nУпс, я озадачен вашим запросом, уж больно много вариантов. \nПопробуйте уточнить:'
+#     except wikipedia.exceptions.HTTPTimeoutError:
+#         final_message = '\nУпс, видимо, мне не хотят отвечать... \nДавайте  подождём, пусть они там немного разгрузятся.'
+#     except wikipedia.exceptions.RedirectError:
+#
+#         final_message = '\nУпс, нас пытаются куда-то перенаправить... \nПопробуйте поискать еще раз.'
+#     except wikipedia.exceptions.WikipediaException:
+#         final_message = '\nУпс, что-то пошло не так... \nПопробуйте поискать еще раз.'
+#     except Exception as e:
+#         return 'В энциклопедии нет информации об этом'
+#     bot.send_message(message.chat.id, final_message, parse_mode='html')
 
 
 # Запускаем бота
