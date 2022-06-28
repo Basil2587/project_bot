@@ -23,18 +23,13 @@ if platform.system() == 'Windows':
 
 load_dotenv()
 
+# Парсим сайт и вытаскиваем картинки
 site = 'https://yandex.ru/images/search?from=tabbar&text=%D1%81%D0%B8%D1%81%D1%8C%D0%BA%D0%B8'
-
 response = requests.get(site)
-
 soup = BeautifulSoup(response.text, 'html.parser')
 img_tags = soup.find_all('img')
-
 urls = [img['src'] for img in img_tags]
 urls = list(filter(None, urls))
-picture2 = choice(urls)
-get_img = get('https:' + picture2).content
-
 
 # Создаем экземпляр бота
 bot = telebot.TeleBot(os.getenv('TOKEN_GIRL_BOT'))
@@ -49,22 +44,8 @@ if os.path.exists('data/b2.txt'):
     file_path.close()
 
 
-# Команда start
-@bot.message_handler(commands=["start"])
-def start(m, res=False):
-    # Добавляем две кнопки
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    item1 = types.KeyboardButton("Сиськи")
-    item2 = types.KeyboardButton("Показать фото с сервера")
-    markup.add(item1)
-    markup.add(item2)
-    # bot.send_message(m.chat.id, 'Я на связи. Напиши мне Привет )')
-    bot.send_message(m.chat.id, '\nЯ на связи. Напиши мне Привет или\n'
-                                'Нажмите: \nНа кнопку', reply_markup=markup)
-
-
 # С помощью fuzzywuzzy вычисляем наиболее похожую фразу и выдаем в качестве ответа следующий элемент списка
-def answer(text):
+def answer_question(text):
     try:
         text = text.lower().strip()
         if os.path.exists('data/b2.txt'):
@@ -85,6 +66,28 @@ def answer(text):
             return 'Ошибка'
     except:
         return 'Ошибка'
+
+
+# Команда start
+@bot.message_handler(commands=["start"])
+def start(message, res=False):
+    # Добавляем две кнопки
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    buttons = ["Сиськи", "Показать фото с сервера"]
+    markup.add(*buttons)
+    # bot.send_message(m.chat.id, 'Я на связи. Напиши мне Привет )')
+    bot.send_message(message.chat.id, '\nЯ на связи. Напиши мне Привет или\n'
+                                      'Нажмите: \nНа кнопку', reply_markup=markup)
+
+
+@bot.message_handler(commands=["game"])
+def spn_game(message):
+    keyboard = types.InlineKeyboardMarkup()
+    buttons = [types.InlineKeyboardButton("Камень", callback_data="камень"),
+               types.InlineKeyboardButton("Бумага", callback_data="бумага"),
+               types.InlineKeyboardButton("Ножницы", callback_data="ножницы")]
+    keyboard.add(*buttons)
+    bot.send_message(message.chat.id, "Выберите 'камень', 'бумага', 'ножницы' ", reply_markup=keyboard)
 
 
 # Получение сообщений от юзера
@@ -116,8 +119,11 @@ def handle_image(message):
 @bot.message_handler(content_types=["text"])
 def handle_text(message):
     # Запись логов
-    new_file_path = open('data/' + str(message.chat.id) + '_log.txt', 'a', encoding='UTF-8')
+    new_file_path = open('data/' + str(message.chat.id)
+                         + '_' + str(message.chat.username) + '_log.txt', 'a', encoding='UTF-8')
     if message.text.lower() == 'сиськи':
+        picture_site = choice(urls)
+        get_img = get('https:' + picture_site).content
         bot.send_photo(message.chat.id, get_img)
     elif message.text.lower() == 'показать фото с сервера':
         lists = glob('image/photos/*')  # создаем список из названий картинок
@@ -125,23 +131,75 @@ def handle_text(message):
         bot.send_photo(message.chat.id, photo=open(picture, 'rb'))
 
     else:
-        text_answer2 = answer(message.text)
-        new_file_path.write('u: ' + message.text + '\n' + text_answer2 + '\n')
+        text_answer = answer_question(message.text)
+        new_file_path.write('u: ' + message.text + '\n' + text_answer + '\n')
         new_file_path.close()
         # Отправка ответа
-        bot.send_message(message.chat.id, text_answer2)
+        bot.send_message(message.chat.id, text_answer)
 
 
-# Отправка фото по времени
+@bot.callback_query_handler(func=lambda call: True)
+def handle(call):
+    game_dict = {"камень": '🪨', "бумага": '📃', "ножницы": '✂'}
+    word_list = [i for i in game_dict.keys()]
+    computer_action = choice(word_list)
+    if call.data == computer_action:
+        bot.answer_callback_query(
+            call.id, text=f"Я выбрала {computer_action} {game_dict[computer_action]}.\n Ничья!!", show_alert=True)
+    elif call.data == "камень":
+        if computer_action == "ножницы":
+            bot.answer_callback_query(
+                call.id,
+                text=f"Я выбрала {computer_action}{game_dict[computer_action]}.\n Камень бьет ножницы! Вы победили!",
+                show_alert=True)
+        else:
+            bot.answer_callback_query(
+                call.id,
+                text=f"Я выбрала {computer_action}{game_dict[computer_action]}.\n"
+                     f" Бумага оборачивает камень! Вы проиграли.", show_alert=True)
+    elif call.data == "бумага":
+        if computer_action == "камень":
+            bot.answer_callback_query(
+                call.id,
+                text=f"Я выбрала {computer_action}{game_dict[computer_action]}.\n"
+                     f" Бумага оборачивает камень! Вы победили.", show_alert=True)
+        else:
+            bot.answer_callback_query(
+                call.id,
+                text=f"Я выбрала {computer_action} {game_dict[computer_action]}.\n"
+                     f" Ножницы режут бумагу! Вы проиграли.", show_alert=True)
+    elif call.data == "ножницы":
+        if computer_action == "бумага":
+            bot.answer_callback_query(
+                call.id,
+                text=f"Я выбрала {computer_action} {game_dict[computer_action]}.\n"
+                     f"Ножницы режут бумагу! Вы победили!", show_alert=True)
+        else:
+            bot.answer_callback_query(
+                call.id,
+                text=f"Я выбрала {computer_action} {game_dict[computer_action]}.\n"
+                     f"Камень бьет ножницы! Вы проиграли.", show_alert=True)
+
+
+# Отправка фото, сообщение по времени
 def send_message1():
-    picture3 = choice(urls)
-    get_img2 = get('https:' + picture3).content
-    bot.send_photo(485409413, get_img2)
+    picture = choice(urls)
+    site_img = get('https:' + picture).content
+    bot.send_photo(485409413, site_img)
     # bot.send_message(1286749978, 'TEXT')
 
 
+def send_message2():
+    bot.send_message(485409413, 'Доброе утро!')
+
+
+def send_message3():
+    bot.send_message(485409413, 'Ты красавчик!!!')
+
+
 schedule.every(60).minutes.do(send_message1)
-# schedule.every().day.at("08:00").do(send_message1)
+schedule.every().day.at("09:00").do(send_message2)
+schedule.every().day.at("17:00").do(send_message3)
 
 
 class ScheduleMessage():
@@ -151,16 +209,14 @@ class ScheduleMessage():
             time.sleep(1)
 
     def start_process():
-        p1 = Process(target=ScheduleMessage.try_send_schedule, args=())
+        p1 = Process(target=ScheduleMessage.send_schedule, args=())
         p1.start()
 
 
+# Запускаем бота
 if __name__ == '__main__':
     ScheduleMessage.start_process()
     try:
         bot.polling(none_stop=True)
     except:
         pass
-
-# Запускаем бота
-# bot.polling(none_stop=True, interval=0)
