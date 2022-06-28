@@ -16,10 +16,14 @@
 - /deletebot — удалить бота.
 
 
-В директории проекта создайте файл .env с токенами бота:
-TOKEN_ECHO_BOT=TOKEN
-TOKEN_FACTS_BOT=TOKEN
-TOKEN_GIRL_BOT=TOKEN
+# Инструкция 
+1. Перейти в каталог с проектом и создать виртуальное окружение (`python3 -m venv venv`)
+2. Запустить виртуальное окружение (`source venv/bin/activate`) на Mac/Linux или (`source venv/Scripts/activate`) на Windows
+3. Установить все необходимые пакеты, указанные в файле requirements.txt (`pip install -r requirements.txt`)
+4. В директории проекта создайте файл .env с токенами бота:
+- TOKEN_ECHO_BOT=TOKEN
+- TOKEN_FACTS_BOT=TOKEN
+- TOKEN_GIRL_BOT=TOKEN
 
 
 ## Стек
